@@ -1,0 +1,12 @@
+#!/bin/bash
+# ntwk2001_encrypt
+# Created by Marcus Dyck 20 Nov 2014
+# This script handles all the encryption and decription for the files included in the NTWK-2001 project
+# Exit codes:
+# 1: Nothin' yet
+# Last modified on 20 Nov 2014
+
+# Syntax:
+# encrypt [string] [key]: encrypts the contents of the argument passed using the key provided.
+# decrypt [string] [key]: same thing as encrypt, but the other way around.
+# checksum [file] [hash]: compares the sha256 checksum of the file with the specified hash

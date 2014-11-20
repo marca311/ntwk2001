@@ -1,0 +1,23 @@
+#!/bin/bash
+# create_sums
+# Created by Marcus Dyck 20 Nov 2014
+# This script AAAAAAAAAAAAAAAAAA
+# Exit codes:
+# 1: nothin' yet
+# Last modified on 20 Nov 2014
+
+# read -s hides input to command (for passwords)
+
+# Hashing algorithms are used to verify files 
+# sha-512 is a hashing algorithm that generates a hash based on file contents and metadata.
+# I am using it for a combination of speed and security. It is more secure and faster than sha-256.
+
+# Runs the config file full of config variables.
+/etc/myproject_config
+
+function 
+
+for NEXT in `cat "$filelocation"/filelist.txt`
+do
+    copyFile "$NEXT"
+done
