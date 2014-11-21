@@ -7,6 +7,18 @@
 # Last modified on 20 Nov 2014
 
 # Syntax:
-# encrypt [string] [key]: encrypts the contents of the argument passed using the key provided.
-# decrypt [string] [key]: same thing as encrypt, but the other way around.
-# checksum [file] [hash]: compares the sha256 checksum of the file with the specified hash
+# encrypt [string] [keyfile]: encrypts the contents of the argument passed using the key provided.
+# decrypt [string] [keyfile]: same thing as encrypt, but the other way around.
+# checksum [file]: Calculates the sha512 hash for the specific file.
+
+function encrypt() {
+    result=`echo "$1" | openssl enc -aes-256-cbc -pass file:$2`
+}
+
+function decrypt() {
+    result=`echo "$1" | openssl enc -d -aes-256-cbc -pass file:$2`
+}
+
+function checksum() {
+    checksum=`sha512sum $1`
+}

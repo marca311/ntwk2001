@@ -15,6 +15,9 @@
 # Runs the config file full of config variables.
 /etc/myproject_config
 
+# Runs the encryption library full of functions
+ntwk2001_encrypt
+
 function 
 
 for NEXT in `cat "$filelocation"/filelist.txt`
