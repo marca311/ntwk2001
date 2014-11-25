@@ -2,9 +2,7 @@
 # ntwk2001_encrypt
 # Created by Marcus Dyck 20 Nov 2014
 # This script handles all the encryption and decription for the files included in the NTWK-2001 project
-# Exit codes:
-# 1: Nothin' yet
-# Last modified on 20 Nov 2014
+# Last modified on 24 Nov 2014
 
 # Syntax:
 # encrypt [string] [keyfile]: encrypts the contents of the argument passed using the key provided.
@@ -12,11 +10,11 @@
 # checksum [file]: Calculates the sha512 hash for the specific file.
 
 function encrypt() {
-    result=`echo "$1" | openssl enc -aes-256-cbc -pass file:$2`
+    openssl enc -aes-256-cbc -pass file:$2
 }
 
 function decrypt() {
-    result=`echo "$1" | openssl enc -d -aes-256-cbc -pass file:$2`
+    openssl enc -d -aes-256-cbc -pass file:$2
 }
 
 function checksum() {

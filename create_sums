@@ -1,10 +1,10 @@
 #!/bin/bash
 # create_sums
 # Created by Marcus Dyck 20 Nov 2014
-# This script AAAAAAAAAAAAAAAAAA
+# This script backs up the files specified in the filelist and encrypts the backups. It also creates checksums of all the files and encrypts that too.
 # Exit codes:
 # 1: nothin' yet
-# Last modified on 20 Nov 2014
+# Last modified on 24 Nov 2014
 
 # read -s hides input to command (for passwords)
 
@@ -12,15 +12,107 @@
 # sha-512 is a hashing algorithm that generates a hash based on file contents and metadata.
 # I am using it for a combination of speed and security. It is more secure and faster than sha-256.
 
+# Make sure only root can run the script
+# Credit to http://www.cyberciti.biz/tips/shell-root-user-check-script.html
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root"
+   exit 2
+fi
+
 # Runs the config file full of config variables.
 /etc/myproject_config
 
-# Runs the encryption library full of functions
+# Runs the encryption library chock full of functions
 ntwk2001_encrypt
 
-function 
+# Prompts the user with a yes/no question
+# Syntax: prompt_yes_no [question]
+# Returns: confirmed (boolean)
+function prompt_yes_no() {
+    echo -n -e $1 "(y/n): "
+    read answer
+    # Credit to https://stackoverflow.com/questions/2264428/converting-string-to-lower-case-in-bash-shell-scripting
+    answer=`echo $answer | tr '[:upper:]' '[:lower:]'` # Makes the result lower case
+    if [ -z $answer ]
+        then
+            echo "Please enter y or n."
+            repeat=true
+        else
+            if [ $answer == "y" ]
+            then
+                confirmed=true
+                repeat=false
+            elif [ $answer == "n" ]
+            then
+                confirmed=false
+                repeat=false
+            else
+                echo "Please enter y or n."
+                repeat=true
+            fi
+        fi
+    fi
+}
 
-for NEXT in `cat "$filelocation"/filelist.txt`
+function prompt_value() {
+    if [ -z $2 ]
+    then
+        echo -n $1
+        read result
+        
+    echo -n $1 "[default: $2]: "
+    read result
+    if [ -z $result ]
+    then
+        echo "Using the default of $2"
+        result=$2
+    fi
+}
+
+# Backs up and encrypts the specified file(s)
+# Syntax: backup_and_encrypt_file [file or wildcard]
+function backup_and_encrypt_file() {
+    if [ -e $1 ]
+    then
+        # Runs the contents of the file through encryption and puts them into the backup destination
+        cat $1 | encrypt > $backup_destination/"$(basename $1)"
+    else
+        echo -e "The file \"$1\" does not exist."
+    fi
+}
+# The folder check is no longer here, it is in the install script now.
+# Prompt the user for a encryption key. Defaults to openssl random key.
+repeat=true
+while $repeat
 do
-    copyFile "$NEXT"
+    echo -n "Enter a key for encryption purposes [default: randomly generated]: "
+    read -s key
+    if [ -z $key ]
+    then
+        echo "Randomly generating a key..."
+        key=`openssl rand -base64 33` # 33 chars is to prevent "=" for neatness.
+    else
+        echo -n "Confirm the encryption key: "
+        read $key_confirm
+        if [ $key != $key_confirm ]
+        then
+            echo "Those keys do not match, try again."
+        else
+            repeat=false
+            # Wipe out the confirm variable
+            key_confirm=""
+        fi
+    fi
+done
+
+# Write the key to file and set permissions
+echo "$key" > /etc/sysconfig/bash_file_monitor
+chown root:root /etc/sysconfig/bash_file_monitor
+chmod 400 /etc/sysconfig/bash_file_monitor
+# Wipe out the key variable
+key=""
+
+for NEXT in `cat "$checksum_directory"/filelist.txt`
+do
+    backup_and_encrypt_file "$NEXT"
 done

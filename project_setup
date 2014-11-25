@@ -6,17 +6,19 @@
 # 1: No/Wrong arguments specified
 # 2: Script was not run as root
 # 3: "No" was specified when prompted to continue with install/removal
-# Last modified on 20 Nov 2014
+# Last modified on 24 Nov 2014
 
 # Useful variables:
 # confirmed (bool): Created by the confirm function and says whether the user decided to continue from the last prompt. (answered yes=true)
 
-# Does the entire "are you sure?" process. Exits with code 2 if "N" is specified
+# Asks a yes or no question.
+# Syntax: confirm [question]
+# Returns: confirmed
 function confirm() {
     repeat=true
     while $repeat
     do
-        echo -n "Do you wish to continue? (y/n): "
+        echo -n $1 "(y/n): "
         read answer
         # Credit to https://stackoverflow.com/questions/2264428/converting-string-to-lower-case-in-bash-shell-scripting
         answer=`echo $answer | tr '[:upper:]' '[:lower:]'` # Makes the result lower case
@@ -31,7 +33,6 @@ function confirm() {
                 repeat=false
             elif [ $answer == "n" ]
             then
-                exit 3
                 confirmed=false
                 repeat=false
             else
@@ -51,8 +52,38 @@ function prompt_value() {
     if [ -z $result ]
     then
         echo "Using the default of $2"
-        result=$3
+        result=$2
     fi
+}
+
+# Prompts the user for a folder location and can default. Then confirms that either the folder should be created or used if it already exists.
+# Syntax: prompt_for_folder [question] [default value]
+function prompt_for_folder() {
+    repeat=true
+    while $repeat
+    do
+        prompt_value "$1" "$2"
+        if [ -d $result ]
+        then
+            confirm "That folder already exists, are you sure you want to use it?"
+            if $confirmed
+            then
+                repeat=false
+            else
+                # This else has to be here because I reuse the variable in the confirm method.
+                repeat=true
+            fi
+        else
+            confirm "That folder does not exist, do you want it to be created?"
+            if $confirmed
+            then
+                repeat=false
+            else
+                # This else has to be here because I reuse the variable in the confirm method.
+                repeat=true
+            fi
+        fi
+    done
 }
 
 # Show usage info if no argument is specified
@@ -75,26 +106,29 @@ then
     echo "This program will now create a configuration file and install"
     echo "the components of Marcus Dyck's scripting project into the"
     echo "specified locations."
-    confirmed=confirm
+    confirm "Do you wish to continue?"
     if $confirmed
     then
         echo "Installing..."
         # Prompt for various installation values
         prompt_value "Enter an admin email address" "root@localhost"
         email=$result
-        prompt_value "Specifiy the installation directory" "/usr/bin/"
+        prompt_value "Specify the installation directory" "/usr/bin/"
         install_directory=$result
-        prompt_value "Specify the location for the checksums" "/var/lib/ntwk2001"
+        prompt_for_folder "Specify the location for the checksums" "/var/lib/ntwk2001"
         checksum_directory=$result
-        prompt_value "Specify the location for the file backups" "/var/lib/ntwk2001/backups"
+        prompt_for_folder "Specify the location for the file backups" "/var/lib/ntwk2001/backups"
         backup_directory=$result
         prompt_value "Specify the frequency of file scans (in seconds)" "600"
         scan_freq=$result
         
         #Do all the installation work DO NOT FORGET TO DO THIS!
-        # Move the config file to /etc/myproject_config (this cannot be changed)
+        # Move the config file to /etc/myproject_config (this location cannot be changed)
+        # Make sure to change the permissions of the backup dir and the key file
         
-        
+    else
+        # User did not go through with install
+        exit 3
     fi
     
 fi
@@ -103,10 +137,14 @@ fi
 if [ $1 = "uninstall" ]
 then
     echo "This program will now uninstall Marcus Dyck\'s scripting project."
-    confirmed=`confirm`
+    confirm "Do you wish to continue?"
     if $confirmed
     then
         echo "Removing..."
          # ADD ALL THIS AS WELL
+         # Notes: check if the /var/lib/ntwk2001/* (or alt) directory is empty once all files are gone. If so, delete the folder.
+    else
+        # User did not go through with uninstall
+        exit 3
     fi
 fi
