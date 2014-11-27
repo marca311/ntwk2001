@@ -10,13 +10,13 @@
 # checksum [file]: Calculates the sha512 hash for the specific file.
 
 function encrypt() {
-    openssl enc -aes-256-cbc -pass file:$2
+    openssl enc -aes-256-cbc -pass file:"/etc/sysconfig/bash_file_monitor"
 }
 
 function decrypt() {
-    openssl enc -d -aes-256-cbc -pass file:$2
+    openssl enc -d -aes-256-cbc -pass file:"/etc/sysconfig/bash_file_monitor"
 }
 
 function checksum() {
-    checksum=`sha512sum $1`
+    sha512sum
 }

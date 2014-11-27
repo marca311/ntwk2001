@@ -4,7 +4,7 @@
 # This script backs up the files specified in the filelist and encrypts the backups. It also creates checksums of all the files and encrypts that too.
 # Exit codes:
 # 1: nothin' yet
-# Last modified on 24 Nov 2014
+# Last modified on 26 Nov 2014
 
 # read -s hides input to command (for passwords)
 
@@ -75,7 +75,11 @@ function backup_and_encrypt_file() {
     if [ -e $1 ]
     then
         # Runs the contents of the file through encryption and puts them into the backup destination
-        cat $1 | encrypt > $backup_destination/"$(basename $1)"
+        cat $1 | encrypt > "$backup_destination/$(basename $1)"
+        # Change permissions of new backup file
+        chmod 600 "$backup_destination/$(basename $1)"
+        # Create a checksum of the file and encrypt the checksum
+        checksums=$checksums"\n"`cat $1 | checksum`
     else
         echo -e "The file \"$1\" does not exist."
     fi
@@ -96,6 +100,7 @@ do
         read $key_confirm
         if [ $key != $key_confirm ]
         then
+            # Note: You said that I was allowed to do this loop.
             echo "Those keys do not match, try again."
         else
             repeat=false
@@ -112,7 +117,10 @@ chmod 400 /etc/sysconfig/bash_file_monitor
 # Wipe out the key variable
 key=""
 
+# Cycle through all files in the filelist
 for NEXT in `cat "$checksum_directory"/filelist.txt`
 do
     backup_and_encrypt_file "$NEXT"
 done
+
+# Save all the checksum information to file
