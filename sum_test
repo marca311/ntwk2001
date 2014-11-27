@@ -6,4 +6,49 @@
 # 1: Nothin' yet
 # Last modified on 26 Nov 2014
 
+# Checks the specified config file to see if it has been modified
+# Syntax: check_config_file [file path]
+function check_config_file() {
+    # Get file location (two spaces after checksum)
+}
 
+# Is called if the file has been modified
+# Syntax: invalid_sum [file path]
+function invalid_sum() {
+    
+}
+
+# Is called if the backup file has been modified in addition to the normal file
+# Syntax: invalid_backup [normal file path]
+function invalid_backup() {
+    
+}
+
+### Main script thread ###
+
+# Make sure only root can run the script
+# Credit to http://www.cyberciti.biz/tips/shell-root-user-check-script.html
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root"
+   exit 2
+fi
+
+# Load the config file
+/etc/myproject_config
+
+# Load the encryption library
+ntwk2001_encrypt
+
+# Load the checksum file
+checksums=`"$checksum_directory/ntwk2001_checksums" | decrypt`
+
+### Main loop ###
+while true
+do
+    # Cycle through all files in the filelist
+    for NEXT in $checksums
+    do
+        check_config_file "$NEXT"
+    done
+    sleep $scan_freq
+done

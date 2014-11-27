@@ -84,6 +84,8 @@ function backup_and_encrypt_file() {
         echo -e "The file \"$1\" does not exist."
     fi
 }
+
+### Main script thread ###
 # The folder check is no longer here, it is in the install script now.
 # Prompt the user for a encryption key. Defaults to openssl random key.
 repeat=true
@@ -124,3 +126,5 @@ do
 done
 
 # Save all the checksum information to file
+echo -e "$checksums" | encrypt > "$checksum_directory/ntwk2001_checksums"
+chmod 400 "$checksum_directory/ntwk2001_checksums"

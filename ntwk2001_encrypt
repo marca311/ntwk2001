@@ -2,12 +2,13 @@
 # ntwk2001_encrypt
 # Created by Marcus Dyck 20 Nov 2014
 # This script handles all the encryption and decription for the files included in the NTWK-2001 project
-# Last modified on 24 Nov 2014
+# Last modified on 26 Nov 2014
 
 # Syntax:
-# encrypt [string] [keyfile]: encrypts the contents of the argument passed using the key provided.
-# decrypt [string] [keyfile]: same thing as encrypt, but the other way around.
-# checksum [file]: Calculates the sha512 hash for the specific file.
+# Note: These all use standard input and output for data handling
+# encrypt: encrypts the contents of the argument passed using the key provided.
+# decrypt: same thing as encrypt, but the other way around.
+# checksum: Calculates the sha512 hash for the specific file.
 
 function encrypt() {
     openssl enc -aes-256-cbc -pass file:"/etc/sysconfig/bash_file_monitor"

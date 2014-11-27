@@ -97,6 +97,7 @@ function delete_backup_file() {
     done
 }
 
+### Main script thread ###
 # Show usage info if no argument is specified
 if [ -z $@ ]
 then
@@ -124,7 +125,7 @@ then
         # Prompt for various installation values
         prompt_value "Enter an admin email address" "root@localhost"
         email=$result
-        prompt_value "Specify the installation directory" "/usr/bin/"
+        prompt_value "Specify the installation directory" "/usr/sbin/"
         install_directory=$result
         prompt_for_folder "Specify the location for the checksums" "/var/lib/ntwk2001"
         checksum_directory=$result
@@ -133,19 +134,21 @@ then
         prompt_value "Specify the frequency of file scans (in seconds)" "600"
         scan_freq=$result
         
-        #Do all the installation work DO NOT FORGET TO DO THIS!
-        # Move the config file to /etc/myproject_config (this location cannot be changed)
-        # Make sure to change the permissions of the backup dir and the key file
-        
         # Create the config file
         echo "email=$email" >> /etc/myproject_config
         echo "install_directory=$install_directory" >> /etc/myproject_config
         echo "checksum_directory=$checksum_directory" >> /etc/myproject_config
         echo "backup_directory=$backup_directory" >> /etc/myproject_config
         echo "scan_freq=$scan_freq" >> /etc/myproject_config
+        chmod 744 /etc/myproject_config
         # Move the executables to the specified directory
         cp ./create_sums "$install_directory/create_sums"
-        cp ./sum_test "$install_directory/create_sums"
+        cp ./sum_test "$install_directory/sum_test"
+        cp ./ntwk2001_encrypt "$install_directory/ntwk2001_encrypt"
+        # Set execution permissions
+        chmod 700 "$install_directory/create_sums"
+        chmod 700 "$install_directory/sum_test"
+        chmod 700 "$install_directory/ntwk2001_encrypt"
         # Move the service file to the correct directory
         cp ./bash_file_monitor.service /etc/systemd/system/bash_file_monitor.service
         # Move the file list to the checksum directory
@@ -153,7 +156,6 @@ then
         # Create the checksum and backup directories if they don't exist. Also set their permissions.
         mkdir $checksum_directory > /dev/null
         mkdir $backup_directory > /dev/null
-        chmod 600 $checksum_directory
         chmod 600 $backup_directory
     else
         # User did not go through with install
@@ -172,12 +174,13 @@ then
         echo "Removing..."
          # ADD ALL THIS AS WELL
          # Notes: check if the /var/lib/ntwk2001/* (or alt) directory is empty once all files are gone. If so, delete the folder.
+         
          # Check if the config exists. If so, import it.
          if [ -e /etc/myproject_config ]
          then
             /etc/myproject_config
             echo "Removing checksums..."
-            rm "$checksum_directory/checksums.conf"
+            rm "$checksum_directory/ntwk2001_checksums"
             echo "Removing backups..."
             for NEXT in `cat "$checksum_directory/filelist.txt"`
             do
