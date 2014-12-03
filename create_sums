@@ -2,15 +2,13 @@
 # create_sums
 # Created by Marcus Dyck 20 Nov 2014
 # This script backs up the files specified in the filelist and encrypts the backups. It also creates checksums of all the files and encrypts that too.
-# Exit codes:
-# 1: nothin' yet
-# Last modified on 26 Nov 2014
-
-# read -s hides input to command (for passwords)
+# Last modified on 27 Nov 2014
 
 # Hashing algorithms are used to verify files 
 # sha-512 is a hashing algorithm that generates a hash based on file contents and metadata.
 # I am using it for a combination of speed and security. It is more secure and faster than sha-256.
+
+# Insert write-up about aes-256-cbc encryption through openssl
 
 # Make sure only root can run the script
 # Credit to http://www.cyberciti.biz/tips/shell-root-user-check-script.html
@@ -79,7 +77,7 @@ function backup_and_encrypt_file() {
         # Change permissions of new backup file
         chmod 600 "$backup_destination/$(basename $1)"
         # Create a checksum of the file and encrypt the checksum
-        checksums=$checksums"\n"`cat $1 | checksum`
+        checksums=$checksums"\n"`checksum $1`
     else
         echo -e "The file \"$1\" does not exist."
     fi

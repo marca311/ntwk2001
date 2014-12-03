@@ -150,7 +150,7 @@ then
         chmod 700 "$install_directory/sum_test"
         chmod 700 "$install_directory/ntwk2001_encrypt"
         # Move the service file to the correct directory
-        cp ./bash_file_monitor.service /etc/systemd/system/bash_file_monitor.service
+        cp ./bash_file_monitor.service /usr/lib/systemd/system/bash_file_monitor.service
         # Move the file list to the checksum directory
         cp ./filelist.txt "$checksum_directory/filelist.txt"
         # Create the checksum and backup directories if they don't exist. Also set their permissions.
@@ -192,7 +192,7 @@ then
             rm "$install_directory/create_sums"
             rm "$install_directory/sum_test"
             echo "Remove systemd script..."
-            rm "/etc/systemd/system/bash_file_monitor.service"
+            rm "/usr/lib/systemd/system/bash_file_monitor.service"
             echo "Removing config..."
             rm "/etc/myproject_config"
             echo -e "\nDone!"

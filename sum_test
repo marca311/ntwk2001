@@ -1,27 +1,63 @@
 #!/bin/bash
 # sum_test
 # Created by Marcus Dyck 20 Nov 2014
-# This script AAAAAAAAAAAAAAAAAAAAAAAAAA
-# Exit codes:
-# 1: Nothin' yet
-# Last modified on 26 Nov 2014
+# This script checks the list of checksums and compares them to checksums of
+# their originating files. If a checksum turns up different, fix the file and notify the admin.
+# If the backup config has been modified, notify the admin and panic.
+# Last modified on 27 Nov 2014
+
+
+# Is called if the backup file has been modified in addition to the normal file
+# Syntax: invalid_backup [normal file path] [expected checksum] [received checksum]
+function invalid_backup() {
+    # TIME TO PANIC! AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA!!!!
+    echo "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA!!!!!!!!!!" >> /dev/null #surpress the feelings
+    # But seriously, notify the admin and that's all we can do for now.
+    report_email=`echo "The backup for file" $1 "has been modified."` | mail -s "Backup error" $email
+    report_email=`echo "$report_email\nStats:"`
+    report_email=`echo "$report_email\nCurrent Sum: $3"`
+    report_email=`echo "$report_email\nExpected Sum: $2"`
+    report_email=`echo "$report_email\nFile Location: $1"`
+    echo -e "$report_email"
+    # Write to server log
+}
+
+# Is called if the file has been modified
+# Syntax: invalid_sum [file path] [checksum]
+function invalid_sum() {
+    filedir=`dirname "$1"`
+    filename=`basename "$1"`
+    # Check whether the backup is fine
+    backup_sum=`checksum "$backup_directory/$filename" | decrypt | cut -d " " -f 1`
+    
+    if [ "$backup_sum" != "$2" ]
+    then
+        invalid_backup "$1"
+    else
+        mv "$1" "$filedir/$filename.wrong"
+        cp $backup_directory/$filename "$1"
+        # Email the admin
+        report_email=`echo "One of the config files has been modified. The file has been restored from backup."`
+        report_email=`echo "$report_email\nHere are the stats of the file:"`
+        report_email=`echo "$report_email\nCurrent Sum: $2"`
+        report_email=`echo "$report_email\nNoted Sum:"`
+        report_email=`echo "$report_email\nFilename: $1"`
+        report_email=`echo "$report_email\nNew location of modified file: $filedir/$filename.wrong"`
+        echo -e "$report_email" | mail -s "Configuration file modified" $email
+    fi
+}
 
 # Checks the specified config file to see if it has been modified
 # Syntax: check_config_file [file path]
 function check_config_file() {
     # Get file location (two spaces after checksum)
-}
-
-# Is called if the file has been modified
-# Syntax: invalid_sum [file path]
-function invalid_sum() {
-    
-}
-
-# Is called if the backup file has been modified in addition to the normal file
-# Syntax: invalid_backup [normal file path]
-function invalid_backup() {
-    
+    file=`echo "$1" | cut -d " " -f 3`
+    sum=`echo "$1" | cut -d " " -f 1`
+    newsum=`checksum "$file"`
+    if [ newsum != sum ]
+    then
+        invalid_sum "$1" "$sum"
+    fi
 }
 
 ### Main script thread ###
@@ -50,5 +86,6 @@ do
     do
         check_config_file "$NEXT"
     done
+    # Sleeps inbetween scans
     sleep $scan_freq
 done
