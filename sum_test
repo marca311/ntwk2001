@@ -43,20 +43,27 @@ function invalid_sum() {
         report_email=`echo "$report_email\nNoted Sum:"`
         report_email=`echo "$report_email\nFilename: $1"`
         report_email=`echo "$report_email\nNew location of modified file: $filedir/$filename.wrong"`
-        echo -e "$report_email" | mail -s "Configuration file modified" $email
+        echo -e "$report_email" #| mail -s "Configuration file modified" $email
     fi
 }
 
 # Checks the specified config file to see if it has been modified
-# Syntax: check_config_file [file path]
+# Syntax: [checksum line] > check_config_file
 function check_config_file() {
+    # Convert stdin to a variable
+    line=`cat`
+    echo "input: $line"
     # Get file location (two spaces after checksum)
     file=`echo "$1" | cut -d " " -f 3`
     sum=`echo "$1" | cut -d " " -f 1`
-    newsum=`checksum "$file"`
-    if [ newsum != sum ]
+    newsum=`checksum "$file" | cut -d " " -f 1`
+    echo "file: $file"
+    echo "sum: $sum"
+    echo "newsum: $newsum"
+    if [ "$newsum" != "$sum" ]
     then
-        invalid_sum "$1" "$sum"
+        echo "Invalid"
+        #invalid_sum "$file" "$sum"
     fi
 }
 
@@ -70,22 +77,30 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Load the config file
-/etc/myproject_config
+config_file=`cat /etc/myproject_config`
+email=`echo "$config_file" | grep email | cut -d ":" -f 2`
+checksum_directory=`echo "$config_file" | grep checksum_directory | cut -d ":" -f 2`
+backup_directory=`echo "$config_file" | grep backup_directory | cut -d ":" -f 2`
+install_directory=`echo "$config_file" | grep install_directory | cut -d ":" -f 2`
+scan_freq=`echo "$config_file" | grep scan_freq | cut -d ":" -f 2`
 
 # Load the encryption library
-ntwk2001_encrypt
+. $install_directory/ntwk2001_encrypt
 
 # Load the checksum file
-checksums=`"$checksum_directory/ntwk2001_checksums" | decrypt`
+checksums=`cat "$checksum_directory/ntwk2001_checksums" | decrypt`
 
 ### Main loop ###
 while true
 do
+    # Remove all blank lines from checksum file
+    checksums=`echo $checksums | sed '/^$/d'`
+    
     # Cycle through all files in the filelist
-    for NEXT in $checksums
+    while read NEXT
     do
-        check_config_file "$NEXT"
-    done
+        echo "$NEXT" | check_config_file "$NEXT"
+    done <<< "$checksums"
     # Sleeps inbetween scans
     sleep $scan_freq
 done

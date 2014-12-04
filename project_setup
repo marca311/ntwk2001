@@ -135,11 +135,11 @@ then
         scan_freq=$result
         
         # Create the config file
-        echo "email=$email" >> /etc/myproject_config
-        echo "install_directory=$install_directory" >> /etc/myproject_config
-        echo "checksum_directory=$checksum_directory" >> /etc/myproject_config
-        echo "backup_directory=$backup_directory" >> /etc/myproject_config
-        echo "scan_freq=$scan_freq" >> /etc/myproject_config
+        echo "email: $email" > /etc/myproject_config # Overwrite the config file if it already exists.
+        echo "install_directory:$install_directory" >> /etc/myproject_config
+        echo "checksum_directory:$checksum_directory" >> /etc/myproject_config
+        echo "backup_directory:$backup_directory" >> /etc/myproject_config
+        echo "scan_freq:$scan_freq" >> /etc/myproject_config
         chmod 744 /etc/myproject_config
         # Move the executables to the specified directory
         cp ./create_sums "$install_directory/create_sums"
@@ -154,9 +154,12 @@ then
         # Move the file list to the checksum directory
         cp ./filelist.txt "$checksum_directory/filelist.txt"
         # Create the checksum and backup directories if they don't exist. Also set their permissions.
-        mkdir $checksum_directory > /dev/null
-        mkdir $backup_directory > /dev/null
+        mkdir $checksum_directory 2> /dev/null
+        mkdir $backup_directory 2> /dev/null
         chmod 600 $backup_directory
+        
+        # Run the create_sums script
+        create_sums
     else
         # User did not go through with install
         exit 3
@@ -178,7 +181,12 @@ then
          # Check if the config exists. If so, import it.
          if [ -e /etc/myproject_config ]
          then
-            /etc/myproject_config
+            # Gets the configuration information
+            config_file=`cat /etc/myproject_config`
+            checksum_directory=`echo "$config_file" | grep checksum_directory | cut -d ":" -f 2`
+            install_directory=`echo "$config_file" | grep install_directory | cut -d ":" -f 2`
+            backup_directory=`echo "$config_file" | grep backup_directory | cut -d ":" -f 2`
+            
             echo "Removing checksums..."
             rm "$checksum_directory/ntwk2001_checksums"
             echo "Removing backups..."
@@ -199,6 +207,7 @@ then
          else
             echo "Installed config does not exist. Uninstall failed."
             exit 4
+         fi
     else
         # User did not go through with uninstall
         exit 3

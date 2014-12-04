@@ -17,11 +17,15 @@ if [[ $EUID -ne 0 ]]; then
    exit 2
 fi
 
-# Runs the config file full of config variables.
-/etc/myproject_config
+# Gets the configuration information
+config_file=`cat /etc/myproject_config`
+checksum_directory=`echo "$config_file" | grep checksum_directory | cut -d ":" -f 2`
+backup_directory=`echo "$config_file" | grep backup_directory | cut -d ":" -f 2`
+install_directory=`echo "$config_file" | grep install_directory | cut -d ":" -f 2`
 
 # Runs the encryption library chock full of functions
-ntwk2001_encrypt
+echo "install dir: $install_directory"
+. "$install_directory/ntwk2001_encrypt"
 
 # Prompts the user with a yes/no question
 # Syntax: prompt_yes_no [question]
@@ -32,22 +36,21 @@ function prompt_yes_no() {
     # Credit to https://stackoverflow.com/questions/2264428/converting-string-to-lower-case-in-bash-shell-scripting
     answer=`echo $answer | tr '[:upper:]' '[:lower:]'` # Makes the result lower case
     if [ -z $answer ]
+    then
+        echo "Please enter y or n."
+        repeat=true
+    else
+        if [ $answer == "y" ]
         then
+            confirmed=true
+            repeat=false
+        elif [ $answer == "n" ]
+        then
+            confirmed=false
+            repeat=false
+        else
             echo "Please enter y or n."
             repeat=true
-        else
-            if [ $answer == "y" ]
-            then
-                confirmed=true
-                repeat=false
-            elif [ $answer == "n" ]
-            then
-                confirmed=false
-                repeat=false
-            else
-                echo "Please enter y or n."
-                repeat=true
-            fi
         fi
     fi
 }
@@ -57,7 +60,7 @@ function prompt_value() {
     then
         echo -n $1
         read result
-        
+    fi
     echo -n $1 "[default: $2]: "
     read result
     if [ -z $result ]
@@ -73,9 +76,9 @@ function backup_and_encrypt_file() {
     if [ -e $1 ]
     then
         # Runs the contents of the file through encryption and puts them into the backup destination
-        cat $1 | encrypt > "$backup_destination/$(basename $1)"
+        cat $1 | encrypt > "$backup_directory/$(basename $1)"
         # Change permissions of new backup file
-        chmod 600 "$backup_destination/$(basename $1)"
+        chmod 600 "$backup_directory/$(basename $1)"
         # Create a checksum of the file and encrypt the checksum
         checksums=$checksums"\n"`checksum $1`
     else
@@ -95,6 +98,7 @@ do
     then
         echo "Randomly generating a key..."
         key=`openssl rand -base64 33` # 33 chars is to prevent "=" for neatness.
+        repeat=false
     else
         echo -n "Confirm the encryption key: "
         read $key_confirm
@@ -118,7 +122,7 @@ chmod 400 /etc/sysconfig/bash_file_monitor
 key=""
 
 # Cycle through all files in the filelist
-for NEXT in `cat "$checksum_directory"/filelist.txt`
+for NEXT in `cat "$checksum_directory/filelist.txt"`
 do
     backup_and_encrypt_file "$NEXT"
 done
