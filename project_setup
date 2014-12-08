@@ -91,9 +91,18 @@ function prompt_for_folder() {
 # Syntax: delete_backup_file [config file...]
 function delete_backup_file() {
     # The for loop takes wildcards into account
-    for next_file in $@
+    for next_file in "$@"
     do
-        rm "$backup_directory/$(basename $next_file)"
+        # Make sure the line isn't blank
+        if [ "$next_file" ]
+        then
+            # Turn all multiple spaces into one
+            line=`echo "$next_file" | tr -s " "`
+            # Split the checksum from the file
+            file=`echo "$line" | cut -d " " -f 2`
+            # Remove the file from the backup directory
+            rm "$backup_directory/$(basename $file)"
+        fi
     done
 }
 
@@ -158,6 +167,10 @@ then
         mkdir $backup_directory 2> /dev/null
         chmod 600 $backup_directory
         
+        # Reload the systemd daemon and enable the script
+        systemctl daemon-reload
+        systemctl enable bash_file_monitor.service
+        
         # Run the create_sums script
         create_sums
     else
@@ -174,11 +187,10 @@ then
     confirm "Do you wish to continue?"
     if $confirmed
     then
+        echo "Stopping the service..."
+        systemctl stop bash_file_monitor.service
         echo "Removing..."
-         # ADD ALL THIS AS WELL
-         # Notes: check if the /var/lib/ntwk2001/* (or alt) directory is empty once all files are gone. If so, delete the folder.
-         
-         # Check if the config exists. If so, import it.
+         # Check if the config exists.
          if [ -e /etc/myproject_config ]
          then
             # Gets the configuration information
@@ -187,13 +199,22 @@ then
             install_directory=`echo "$config_file" | grep install_directory | cut -d ":" -f 2`
             backup_directory=`echo "$config_file" | grep backup_directory | cut -d ":" -f 2`
             
-            echo "Removing checksums..."
-            rm "$checksum_directory/ntwk2001_checksums"
             echo "Removing backups..."
-            for NEXT in `cat "$checksum_directory/filelist.txt"`
+            
+            . "$install_directory/ntwk2001_encrypt"
+            # Load the checksum file
+            checksums=`cat "$checksum_directory/ntwk2001_checksums" | decrypt | tr -s " "`
+            # Temporarily remove a space as a for loop delimiter
+            old_IFS=`echo "$IFS"`
+            IFS=$'\n'
+            for NEXT in $checksums
             do
                 delete_backup_file "$NEXT"
             done
+            # Restore the delimiter after the for loop
+            IFS=`echo "$old_IFS"`
+            echo "Removing checksums..."
+            rm "$checksum_directory/ntwk2001_checksums"
             echo "Removing file list..."
             rm "$checksum_directory/filelist.txt"
             echo "Removing executables..."

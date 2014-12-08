@@ -13,13 +13,17 @@ function invalid_backup() {
     # TIME TO PANIC! AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA!!!!
     echo "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA!!!!!!!!!!" >> /dev/null #surpress the feelings
     # But seriously, notify the admin and that's all we can do for now.
-    report_email=`echo "The backup for file" $1 "has been modified."` | mail -s "Backup error" $email
+    file=`echo "$1"`
+    correct_sum=`echo "$2"`
+    wrong_sum=`echo "$3"`
+    report_email=`echo "The backup for file" $ "has been modified."` | mail -s "Backup error" $email
     report_email=`echo "$report_email\nStats:"`
-    report_email=`echo "$report_email\nCurrent Sum: $3"`
-    report_email=`echo "$report_email\nExpected Sum: $2"`
-    report_email=`echo "$report_email\nFile Location: $1"`
-    echo -e "$report_email"
+    report_email=`echo "$report_email\nCurrent Sum: $wrong_sum"`
+    report_email=`echo "$report_email\nExpected Sum: $correct_sum"`
+    report_email=`echo "$report_email\nFile Location: $file"`
+    echo -e "$report_email" | mail -s "Backup file modified" $email
     # Write to server log
+    echo -e "$report_email" | systemd-cat
 }
 
 # Is called if the file has been modified
@@ -28,22 +32,28 @@ function invalid_sum() {
     filedir=`dirname "$1"`
     filename=`basename "$1"`
     # Check whether the backup is fine
-    backup_sum=`checksum "$backup_directory/$filename" | decrypt | cut -d " " -f 1`
+    file_path=`echo "$1"`
+    file_sum=`echo "$2"`
+    backup_sum=`cat "$backup_directory/$filename" | decrypt | checksum | cut -d " " -f 1`
     
-    if [ "$backup_sum" != "$2" ]
+    if [ "$backup_sum" != "$file_sum" ]
     then
-        invalid_backup "$1"
+        echo "Backup for $file_path has been modified"
+        invalid_backup "$file_path"
     else
-        mv "$1" "$filedir/$filename.wrong"
-        cp $backup_directory/$filename "$1"
+        mv "$file_path" "$filedir/$filename.wrong"
+        cat "$backup_directory/$filename" | decrypt > "$file_path"
         # Email the admin
         report_email=`echo "One of the config files has been modified. The file has been restored from backup."`
         report_email=`echo "$report_email\nHere are the stats of the file:"`
-        report_email=`echo "$report_email\nCurrent Sum: $2"`
-        report_email=`echo "$report_email\nNoted Sum:"`
-        report_email=`echo "$report_email\nFilename: $1"`
+        report_email=`echo "$report_email\nCurrent Sum: $file_sum"`
+        report_email=`echo "$report_email\nNoted Sum: $backup_sum"`
+        report_email=`echo "$report_email\nFilename: $file_path"`
         report_email=`echo "$report_email\nNew location of modified file: $filedir/$filename.wrong"`
-        echo -e "$report_email" #| mail -s "Configuration file modified" $email
+        # Send the email
+        echo -e "$report_email" | mail -s "Configuration file modified" $email
+        # Write to system log
+        echo -e "$report_email" | systemd-cat
     fi
 }
 
@@ -52,18 +62,16 @@ function invalid_sum() {
 function check_config_file() {
     # Convert stdin to a variable
     line=`cat`
-    echo "input: $line"
-    # Get file location (two spaces after checksum)
-    file=`echo "$1" | cut -d " " -f 3`
-    sum=`echo "$1" | cut -d " " -f 1`
+    # Turn all multiple spaces into one
+    line=`echo "$line" | tr -s " "`
+    # Split the checksum from the file
+    file=`echo "$line" | cut -d " " -f 2`
+    sum=`echo "$line" | cut -d " " -f 1`
     newsum=`checksum "$file" | cut -d " " -f 1`
-    echo "file: $file"
-    echo "sum: $sum"
-    echo "newsum: $newsum"
     if [ "$newsum" != "$sum" ]
     then
-        echo "Invalid"
-        #invalid_sum "$file" "$sum"
+        echo "$file Has been modified"
+        invalid_sum "$file" "$sum"
     fi
 }
 
@@ -93,13 +101,14 @@ checksums=`cat "$checksum_directory/ntwk2001_checksums" | decrypt`
 ### Main loop ###
 while true
 do
-    # Remove all blank lines from checksum file
-    checksums=`echo $checksums | sed '/^$/d'`
-    
     # Cycle through all files in the filelist
     while read NEXT
     do
-        echo "$NEXT" | check_config_file "$NEXT"
+        # Make sure the line isn't blank
+        if [ "$NEXT" ]
+        then
+            echo "$NEXT" | check_config_file "$NEXT"
+        fi
     done <<< "$checksums"
     # Sleeps inbetween scans
     sleep $scan_freq

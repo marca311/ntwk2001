@@ -1,0 +1,9 @@
+[Unit]
+Description=Monitors a set of backed up files for changes.
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+ExecStart=/usr/sbin/sum_test
+PIDFile=/run/ntwk2001.pid

@@ -8,8 +8,6 @@
 # sha-512 is a hashing algorithm that generates a hash based on file contents and metadata.
 # I am using it for a combination of speed and security. It is more secure and faster than sha-256.
 
-# Insert write-up about aes-256-cbc encryption through openssl
-
 # Make sure only root can run the script
 # Credit to http://www.cyberciti.biz/tips/shell-root-user-check-script.html
 if [[ $EUID -ne 0 ]]; then
@@ -24,7 +22,6 @@ backup_directory=`echo "$config_file" | grep backup_directory | cut -d ":" -f 2`
 install_directory=`echo "$config_file" | grep install_directory | cut -d ":" -f 2`
 
 # Runs the encryption library chock full of functions
-echo "install dir: $install_directory"
 . "$install_directory/ntwk2001_encrypt"
 
 # Prompts the user with a yes/no question
@@ -130,3 +127,6 @@ done
 # Save all the checksum information to file
 echo -e "$checksums" | encrypt > "$checksum_directory/ntwk2001_checksums"
 chmod 400 "$checksum_directory/ntwk2001_checksums"
+
+# Start the service
+systemctl start bash_file_monitor.service
