@@ -1,0 +1,40 @@
+NTWK-2001 Scripting Project
+By Marcus Dyck
+
+#####################################
+#                                   #
+#        Program Description        #
+#                                   #
+#####################################
+
+This program runs the sum_test script in the background.
+The sum_test script keeps an eye on the files specified in filelist.txt
+Any difference in the files will be reported to the specified email adress and then replaced
+with a backup of what the file was like during installation.
+The backup files are stored in a location specified during installation and encrypted with a passcode.
+Any modification to the backups will be reported to the email address.
+All files are checked using a sha512 checksum.
+
+#####################################
+#                                   #
+#           Installation            #
+#                                   #
+#####################################
+
+filelist.txt can be modified before installation to include files to back up.
+However the list of files being monitored can not be changed after installation.
+Run the project_setup script as root with the install argument:
+project_setup install
+
+#####################################
+#                                   #
+#              Running              #
+#                                   #
+#####################################
+
+The script will be started by the install process and will be started on boot.
+However the process can be started and stopped manually through systemctl:
+systemctl start bash_file_monitor.service
+systemctl stop bash_file_monitor.service
+systemctl enable bash_file_monitor.service
+systemctl disable bash_file_monitor.service

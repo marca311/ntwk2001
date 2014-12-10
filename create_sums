@@ -8,6 +8,14 @@
 # sha-512 is a hashing algorithm that generates a hash based on file contents and metadata.
 # I am using it for a combination of speed and security. It is more secure and faster than sha-256.
 
+# aes-256-cbc is an encryption algorithm that uses a combination of 256-bit aes encryption and cbc.
+# Advanced Encryption Standard (AES) a type of encryption that focuses on a high amount of encryption with a low amount of system power.
+# It has a several step process that includes the following:
+# Replacing every byte using a lookup table, shifting bytes a certain number of steps, and shifing columns of bytes.
+# CBC encryption is an extra step applied to the AES encryption that runs the data of the previous block through the encryption for the next block.
+# This means that the encryption is always random in appearance and will be much harder to crack as opposed to ECB encryption.
+# ECB Encryption uses keys to change the bytes in the file, however it can use a similar code for duplicate sections of bytes.
+
 # Make sure only root can run the script
 # Credit to http://www.cyberciti.biz/tips/shell-root-user-check-script.html
 if [[ $EUID -ne 0 ]]; then
@@ -52,6 +60,8 @@ function prompt_yes_no() {
     fi
 }
 
+# Prompts the user for a value and can default if nothing is entered.
+# Syntax: prompt_value[question] [default value]
 function prompt_value() {
     if [ -z $2 ]
     then
@@ -93,15 +103,18 @@ do
     read -s key
     if [ -z $key ]
     then
+        # Generate a random key using openssl if the user does not enter one.
         echo "Randomly generating a key..."
         key=`openssl rand -base64 33` # 33 chars is to prevent "=" for neatness.
         repeat=false
     else
+        echo
         echo -n "Confirm the encryption key: "
-        read $key_confirm
-        if [ $key != $key_confirm ]
+        read -s key_confirm
+        if [ "$key" != "$key_confirm" ]
         then
             # Note: You said that I was allowed to do this loop.
+            echo
             echo "Those keys do not match, try again."
         else
             repeat=false

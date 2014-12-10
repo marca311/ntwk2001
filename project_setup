@@ -87,6 +87,27 @@ function prompt_for_folder() {
     done
 }
 
+# Deltes a file and checks if the folder is empty
+# Syntax: delete_file() [file path]
+function delete_file() {
+    # The for loop takes wildcards into account
+    for next_file in "$@"
+    do
+        rm $1
+        # Check if the parent folder has any other files in it
+        folder=`dirname "$1"`
+        file_listing=`ls -A "$folder"`
+        if [ -z "$file_listing" ]
+        then
+            confirm "$folder is empty, do you want to delete it?"
+            if [ $confirmed ]
+            then
+                rmdir "$folder"
+            fi
+        fi
+    done
+}
+
 # Deletes the backup of the specified file
 # Syntax: delete_backup_file [config file...]
 function delete_backup_file() {
@@ -101,7 +122,7 @@ function delete_backup_file() {
             # Split the checksum from the file
             file=`echo "$line" | cut -d " " -f 2`
             # Remove the file from the backup directory
-            rm "$backup_directory/$(basename $file)"
+            delete_file "$backup_directory/$(basename $file)"
         fi
     done
 }
@@ -183,7 +204,7 @@ fi
 # Uninstall argument handler
 if [ $1 = "uninstall" ]
 then
-    echo "This program will now uninstall Marcus Dyck\'s scripting project."
+    echo "This program will now uninstall Marcus Dyck's scripting project."
     confirm "Do you wish to continue?"
     if $confirmed
     then
@@ -214,17 +235,17 @@ then
             # Restore the delimiter after the for loop
             IFS=`echo "$old_IFS"`
             echo "Removing checksums..."
-            rm "$checksum_directory/ntwk2001_checksums"
+            delete_file "$checksum_directory/ntwk2001_checksums"
             echo "Removing file list..."
-            rm "$checksum_directory/filelist.txt"
+            delete_file "$checksum_directory/filelist.txt"
             echo "Removing executables..."
-            rm "$install_directory/create_sums"
-            rm "$install_directory/sum_test"
+            delete_file "$install_directory/create_sums"
+            delete_file "$install_directory/sum_test"
             echo "Remove systemd script..."
             rm "/usr/lib/systemd/system/bash_file_monitor.service"
             echo "Removing config..."
             rm "/etc/myproject_config"
-            echo -e "\nDone!"
+            echo -e "\nDone!\n"
          else
             echo "Installed config does not exist. Uninstall failed."
             exit 4
